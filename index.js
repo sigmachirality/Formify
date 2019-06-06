@@ -13,23 +13,28 @@ const SES = new AWS.SES();
 const transport = mailer.createTransport({ SES });
 
 exports.handler = async (event) => {
-  const { mode } = event;
+  let { mode, body } = event;
+  body = JSON.parse(body);
   let sender, html, sbj;
   switch (mode) {
     case "contact":
-      let { email, subject } = event;
+      let { email, subject } = body;
       sender = email;
       sbj = subject;
-      html = constants.contactTemplate(event);
+      html = constants.contactTemplate(body);
       break;
     case "subscribe":
-      let { email } = event;
+      let { email } = body;
       sbj = "Subscription Alert";
-      html = constants.contactTemplate(event);
+      html = constants.contactTemplate(body);
       break;
     default:
       throw new Error("Unimplemented form type.");
   }
   const mailOptions = actions.buildMailOptions(sender, EMAIL, html, sbj);
-  return await transport.sendMail(mailOptions); 
+  const res = await transport.sendMail(mailOptions);
+  return {
+    statusCode: 200,
+    body: res
+  };
 }
